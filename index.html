@@ -1,0 +1,780 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Mini Game</title>
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover"
+    />
+    <meta name="color-scheme" content="light" />
+
+    <!-- 預覽用的文字 -->
+    <meta
+      name="description"
+      content="A very serious interactive experiment about gravity, timing, and twenty-eight tiny lights."
+    />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Perieris: 28 Lights Experiment" />
+    <meta
+      property="og:description"
+      content="A very serious interactive experiment about gravity, timing, and twenty-eight tiny lights."
+    />
+    <meta property="og:url" content="https://jxorange.github.io/bd-candles/" />
+
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+          sans-serif;
+        background: radial-gradient(
+          circle at top,
+          #ffe6f0 0,
+          #f3e5f5 40%,
+          #ede7f6 70%,
+          #e0f2f1 100%
+        );
+        color-scheme: light;
+      }
+
+      .game-wrapper {
+        width: 100%;
+        max-height: 95vh;
+        max-width: calc(95vh * 9 / 16);
+        aspect-ratio: 9 / 16;
+        background: #fff8fb;
+        border-radius: 18px;
+        border: 3px solid #f48fb1;
+        box-shadow: 0 14px 28px rgba(0, 0, 0, 0.25);
+        position: relative;
+        overflow: hidden;
+      }
+
+      .screen {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 14px;
+      }
+
+      .hidden {
+        display: none !important;
+      }
+
+      .dialog-box {
+        background: #ffeef6;
+        border-radius: 12px;
+        border: 2px solid #f48fb1;
+        padding: 14px 12px;
+        width: 100%;
+        max-width: 280px;
+        box-shadow: 0 4px 0 #f06292;
+        color: #424242;
+        font-size: 12px;
+        line-height: 1.7;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+      }
+
+      .dialog-text {
+        margin-bottom: 12px;
+        white-space: pre-line;
+        text-align: center;
+      }
+
+      .choice-row {
+        display: flex;
+        gap: 10px;
+        justify-content: center;
+        margin-top: 4px;
+      }
+
+      button {
+        font-family: inherit;
+        font-size: 11px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        border: 2px solid #f48fb1;
+        background: #ffffff;
+        color: #424242;
+        cursor: pointer;
+        box-shadow: 0 3px 0 #f06292;
+        transition: transform 0.1s, box-shadow 0.1s, background 0.1s;
+        touch-action: manipulation;
+      }
+
+      button:active {
+        transform: translateY(2px);
+        box-shadow: 0 1px 0 #f06292;
+        background: #ffe4f1;
+      }
+
+      .primary-btn {
+        margin-top: 10px;
+        min-width: 130px;
+      }
+
+      /* 遊戲畫面 */
+      #game-screen {
+        padding: 10px;
+        align-items: stretch;
+        justify-content: flex-start;
+        gap: 8px;
+      }
+
+      .top-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        font-size: 11px;
+        color: #5d4037;
+        padding: 0 4px 4px;
+      }
+
+      .top-left {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .top-left-label {
+        opacity: 0.8;
+        font-size: 10px;
+      }
+
+      .top-left-value {
+        font-weight: 600;
+        font-size: 13px;
+      }
+
+      .top-right {
+        font-size: 18px;
+        letter-spacing: 2px;
+      }
+
+      .invincible-tag {
+        font-size: 10px;
+        color: #ff6f00;
+        opacity: 0;
+        transition: opacity 0.2s;
+      }
+
+      .invincible-tag.active {
+        opacity: 1;
+      }
+
+      .canvas-container {
+        position: relative;
+        flex: 1;
+        border-radius: 14px;
+        border: 2px solid #ce93d8;
+        overflow: hidden;
+        background: linear-gradient(
+          to bottom,
+          #fff3e0 0,
+          #fce4ec 40%,
+          #e3f2fd 100%
+        );
+      }
+
+      #game-canvas {
+        width: 100%;
+        height: 100%;
+        display: block;
+      }
+
+      .controls {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        margin-top: 8px;
+        padding: 0 6px 4px;
+      }
+
+      .control-btn {
+        flex: 1;
+        font-size: 16px;
+        padding: 8px 0;
+        background: #fff3e0;
+        border-color: #ffb74d;
+        box-shadow: 0 3px 0 #f57c00;
+      }
+
+      .control-btn span {
+        font-size: 10px;
+        display: block;
+        margin-top: 2px;
+      }
+
+      /* 結束畫面 */
+      .end-title {
+        font-size: 14px;
+        margin-bottom: 10px;
+        text-align: center;
+      }
+
+      .end-text {
+        font-size: 11px;
+        line-height: 1.7;
+        margin-bottom: 10px;
+        white-space: pre-line;
+      }
+
+      .end-stats {
+        font-size: 10px;
+        margin-bottom: 10px;
+        line-height: 1.4;
+      }
+
+      .end-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        align-items: center;
+        margin-top: 6px;
+      }
+
+      .small-btn {
+        font-size: 9px;
+        padding: 4px 8px;
+        background: #e3f2fd;
+        border-color: #64b5f6;
+        box-shadow: 0 3px 0 #1976d2;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="game-wrapper">
+      <!-- 起始畫面 -->
+      <div id="start-screen" class="screen">
+        <div class="dialog-box">
+          <div id="start-dialog-text" class="dialog-text">
+            你是不是想問這是什麼？
+          </div>
+          <div id="start-choices" class="choice-row">
+            <button id="btn-yes">是</button>
+            <button id="btn-no">否</button>
+          </div>
+          <div id="start-main-btn-wrapper" class="choice-row hidden">
+            <button id="btn-start-game" class="primary-btn">開始</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 遊戲畫面 -->
+      <div id="game-screen" class="screen hidden">
+        <div class="top-bar">
+          <div class="top-left">
+            <span class="top-left-label">蠟燭</span>
+            <span id="candle-count" class="top-left-value">0</span>
+          </div>
+          <div class="top-right" id="dog-icons">🐶🐶🐶</div>
+          <div class="invincible-tag" id="invincible-tag">🐕 無敵中</div>
+        </div>
+        <div class="canvas-container">
+          <canvas id="game-canvas"></canvas>
+        </div>
+        <div class="controls">
+          <button id="btn-left" class="control-btn">
+            ◀
+            <span>左</span>
+          </button>
+          <button id="btn-right" class="control-btn">
+            ▶
+            <span>右</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- 結束畫面 -->
+      <div id="end-screen" class="screen hidden">
+        <div class="dialog-box">
+          <div id="end-title" class="end-title"></div>
+          <div id="end-text" class="end-text"></div>
+          <div id="end-stats" class="end-stats"></div>
+          <div class="end-buttons">
+            <button id="btn-restart" class="primary-btn">再玩一次</button>
+            <button id="btn-back-title" class="small-btn">回到開頭</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      (function () {
+        // -------- 畫面切換 --------
+        var startScreen = document.getElementById("start-screen");
+        var gameScreen = document.getElementById("game-screen");
+        var endScreen = document.getElementById("end-screen");
+
+        function setScreen(screen) {
+          startScreen.classList.add("hidden");
+          gameScreen.classList.add("hidden");
+          endScreen.classList.add("hidden");
+          screen.classList.remove("hidden");
+        }
+
+        // -------- 打字效果 --------
+        var typeTimer = null;
+        function typeText(el, fullText, speed) {
+          if (typeTimer) {
+            clearInterval(typeTimer);
+            typeTimer = null;
+          }
+          el.textContent = "";
+          var index = 0;
+          typeTimer = setInterval(function () {
+            el.textContent = fullText.slice(0, index);
+            index++;
+            if (index > fullText.length) {
+              clearInterval(typeTimer);
+              typeTimer = null;
+            }
+          }, speed);
+        }
+
+        // -------- 起始畫面 --------
+        var startDialogText = document.getElementById("start-dialog-text");
+        var startChoices = document.getElementById("start-choices");
+        var startMainBtnWrapper = document.getElementById(
+          "start-main-btn-wrapper"
+        );
+        var btnYes = document.getElementById("btn-yes");
+        var btnNo = document.getElementById("btn-no");
+        var btnStartGame = document.getElementById("btn-start-game");
+
+        btnYes.addEventListener("click", function () {
+          typeText(startDialogText, "不要問。", 60);
+          startChoices.classList.add("hidden");
+          startMainBtnWrapper.classList.remove("hidden");
+        });
+
+        btnNo.addEventListener("click", function () {
+          typeText(startDialogText, "那就開始。", 60);
+          startChoices.classList.add("hidden");
+          startMainBtnWrapper.classList.remove("hidden");
+        });
+
+        // -------- 遊戲畫面 DOM / Canvas --------
+        var candleCountEl = document.getElementById("candle-count");
+        var dogIconsEl = document.getElementById("dog-icons");
+        var invincibleTagEl = document.getElementById("invincible-tag");
+        var canvas = document.getElementById("game-canvas");
+        var ctx = canvas.getContext("2d");
+
+        var btnLeft = document.getElementById("btn-left");
+        var btnRight = document.getElementById("btn-right");
+
+        // -------- 結束畫面 DOM --------
+        var endTitleEl = document.getElementById("end-title");
+        var endTextEl = document.getElementById("end-text");
+        var endStatsEl = document.getElementById("end-stats");
+        var btnRestart = document.getElementById("btn-restart");
+        var btnBackTitle = document.getElementById("btn-back-title");
+
+        // -------- Canvas 尺寸 --------
+        var width = 0;
+        var height = 0;
+        var dpr = window.devicePixelRatio || 1;
+
+        function resizeCanvas() {
+          var rect = canvas.getBoundingClientRect();
+          dpr = window.devicePixelRatio || 1;
+          canvas.width = rect.width * dpr;
+          canvas.height = rect.height * dpr;
+          width = rect.width;
+          height = rect.height;
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+        // -------- 遊戲狀態 --------
+        var TARGET_CANDLES = 28;
+        var MAX_LIVES = 3;
+        var INVINCIBLE_DURATION = 5000; // ms
+
+        var gameRunning = false;
+        var lastTimestamp = 0;
+        var spawnTimer = 0;
+
+        var gameState = {
+          candles: 0,
+          bombsHit: 0,
+          invincible: false,
+          invincibleUntil: 0,
+          items: [],
+          playerX: 0,
+          playerY: 0,
+          playerWidth: 40,
+          playerHeight: 40,
+          movingLeft: false,
+          movingRight: false,
+          elapsed: 0,
+        };
+
+        function updateHUD() {
+          candleCountEl.textContent = String(gameState.candles);
+          var livesLeft = Math.max(0, MAX_LIVES - gameState.bombsHit);
+          var icons = "";
+          for (var i = 0; i < MAX_LIVES; i++) {
+            icons += i < livesLeft ? "🐶" : "👻";
+          }
+          dogIconsEl.textContent = icons;
+          if (gameState.invincible) {
+            invincibleTagEl.classList.add("active");
+          } else {
+            invincibleTagEl.classList.remove("active");
+          }
+        }
+
+        function resetGameState() {
+          gameState.candles = 0;
+          gameState.bombsHit = 0;
+          gameState.invincible = false;
+          gameState.invincibleUntil = 0;
+          gameState.items = [];
+          gameState.elapsed = 0;
+          spawnTimer = 0;
+          lastTimestamp = 0;
+
+          gameState.playerWidth = 40;
+          gameState.playerHeight = 40;
+          gameState.playerX = width / 2;
+          gameState.playerY = height - gameState.playerHeight - 24;
+          gameState.movingLeft = false;
+          gameState.movingRight = false;
+
+          updateHUD();
+        }
+
+        // -------- 繪製 --------
+        function draw() {
+          ctx.clearRect(0, 0, width, height);
+
+          // 背景光暈
+          var gradient = ctx.createRadialGradient(
+            width / 2,
+            height * 0.2,
+            10,
+            width / 2,
+            height * 0.2,
+            Math.max(width, height)
+          );
+          gradient.addColorStop(0, "rgba(255, 255, 255, 0.9)");
+          gradient.addColorStop(1, "rgba(255, 255, 255, 0)");
+          ctx.fillStyle = gradient;
+          ctx.fillRect(0, 0, width, height);
+
+          // 玩家（無敵時變狗）—— 強制用黑色，放大字級 + emoji 字體
+          ctx.font = "42px 'Apple Color Emoji','Segoe UI Emoji',system-ui";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.save();
+          ctx.fillStyle = "#000000";
+          var playerEmoji = "🧍";
+          if (gameState.invincible) {
+            playerEmoji = "🐕";
+            ctx.shadowColor = "rgba(255, 235, 59, 0.9)";
+            ctx.shadowBlur = 12;
+          }
+          ctx.fillText(
+            playerEmoji,
+            gameState.playerX,
+            gameState.playerY + gameState.playerHeight / 2
+          );
+          ctx.restore();
+
+          // 掉落物 —— 一樣強制黑色 + emoji 字體，放大一點
+          ctx.font = "38px 'Apple Color Emoji','Segoe UI Emoji',system-ui";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillStyle = "#000000";
+          for (var i = 0; i < gameState.items.length; i++) {
+            var item = gameState.items[i];
+            var emoji = "";
+            if (item.type === "candle") emoji = "🕯️";
+            if (item.type === "bomb") emoji = "🧨";
+            if (item.type === "dog") emoji = "🐕";
+            ctx.fillText(emoji, item.x, item.y);
+          }
+        }
+
+        // -------- 掉落物邏輯 --------
+        function spawnItem() {
+          var r = Math.random();
+          var type;
+          if (r < 0.6) type = "candle";
+          else if (r < 0.9) type = "bomb";
+          else type = "dog";
+
+          var margin = 20;
+          var x = margin + Math.random() * (width - margin * 2);
+          var y = -30;
+
+          var level = Math.min(gameState.candles, TARGET_CANDLES);
+          var baseSpeed = 0.08;
+          var extra = level * 0.009;
+          var speed = baseSpeed + extra;
+
+          gameState.items.push({ x: x, y: y, speed: speed, type: type });
+        }
+
+        function handleCollisions(now) {
+          var pw = gameState.playerWidth;
+          var ph = gameState.playerHeight;
+          var px = gameState.playerX - pw / 2;
+          var py = gameState.playerY;
+
+          var remaining = [];
+          for (var i = 0; i < gameState.items.length; i++) {
+            var item = gameState.items[i];
+            var iw = 34;
+            var ih = 34;
+            var ix = item.x - iw / 2;
+            var iy = item.y - ih / 2;
+
+            var overlap =
+              ix < px + pw && ix + iw > px && iy < py + ph && iy + ih > py;
+
+            if (overlap) {
+              if (item.type === "candle") {
+                gameState.candles += 1;
+                if (gameState.candles >= TARGET_CANDLES) {
+                  updateHUD();
+                  endGame(true);
+                  return;
+                }
+              } else if (item.type === "bomb") {
+                if (!gameState.invincible) {
+                  gameState.bombsHit += 1;
+                  if (gameState.bombsHit >= MAX_LIVES) {
+                    updateHUD();
+                    endGame(false);
+                    return;
+                  }
+                }
+              } else if (item.type === "dog") {
+                gameState.invincible = true;
+                gameState.invincibleUntil = now + INVINCIBLE_DURATION;
+              }
+            } else {
+              remaining.push(item);
+            }
+          }
+          gameState.items = remaining;
+        }
+
+        // -------- 更新 --------
+        function update(delta, now) {
+          gameState.elapsed += delta;
+
+          // 玩家移動
+          var moveSpeed = 0.35;
+          if (gameState.movingLeft) {
+            gameState.playerX -= moveSpeed * delta;
+          }
+          if (gameState.movingRight) {
+            gameState.playerX += moveSpeed * delta;
+          }
+
+          var halfW = gameState.playerWidth / 2;
+          if (gameState.playerX < halfW + 8) gameState.playerX = halfW + 8;
+          if (gameState.playerX > width - halfW - 8)
+            gameState.playerX = width - halfW - 8;
+
+          // 無敵時間
+          if (gameState.invincible && now > gameState.invincibleUntil) {
+            gameState.invincible = false;
+          }
+
+          // 掉落物生成：蠟燭越多越密
+          var baseInterval = 900;
+          var minInterval = 400;
+          var factor = Math.min(gameState.candles / TARGET_CANDLES, 1);
+          var spawnInterval =
+            baseInterval - (baseInterval - minInterval) * factor;
+
+          spawnTimer += delta;
+          if (spawnTimer >= spawnInterval) {
+            spawnTimer = 0;
+            spawnItem();
+          }
+
+          for (var i = 0; i < gameState.items.length; i++) {
+            gameState.items[i].y += gameState.items[i].speed * delta;
+          }
+
+          var filtered = [];
+          for (var j = 0; j < gameState.items.length; j++) {
+            if (gameState.items[j].y < height + 40) {
+              filtered.push(gameState.items[j]);
+            }
+          }
+          gameState.items = filtered;
+
+          handleCollisions(now);
+          updateHUD();
+        }
+
+        // -------- 遊戲迴圈 --------
+        function gameLoop(timestamp) {
+          if (!gameRunning) return;
+          if (!lastTimestamp) lastTimestamp = timestamp;
+          var delta = timestamp - lastTimestamp;
+          lastTimestamp = timestamp;
+
+          update(delta, timestamp);
+          draw();
+
+          requestAnimationFrame(gameLoop);
+        }
+
+        function startGameLoop() {
+          gameRunning = true;
+          lastTimestamp = 0;
+          requestAnimationFrame(gameLoop);
+        }
+
+        function endGame(success) {
+          gameRunning = false;
+
+          if (success) {
+            endTitleEl.textContent = "🎉 成功 🎉";
+            var successText =
+              "成功啦，你的 28 根蠟燭收集完成 🧁（可喜可賀）。\n" +
+              "今年的生日願望：不要再亂找心理學片面知識來反駁我 :)\n" +
+              "至於禮物，我有想法了但還沒找到標的，\n" +
+              "不過禮物可以延後，祝福不行。\n\n" +
+              "所以——生日快樂，希望你玩得開心 ;)\n\n" +
+              "—— by 頂尖大師橘";
+            typeText(endTextEl, successText, 50);
+            endStatsEl.textContent =
+              "蠟燭：28 根\n" + "炸彈：" + gameState.bombsHit + " 顆";
+          } else {
+            endTitleEl.textContent = "💥 失敗 💥";
+            var failText =
+              "應該會分炸彈跟蠟燭的吧？🤔\n" +
+              "今年的操作狀態：有待加強。\n" +
+              "建議重來。";
+            typeText(endTextEl, failText, 60);
+            endStatsEl.textContent =
+              "蠟燭：" +
+              gameState.candles +
+              " 根\n" +
+              "炸彈：" +
+              gameState.bombsHit +
+              " 條";
+          }
+
+          setScreen(endScreen);
+        }
+
+        // -------- 控制輸入 --------
+        function bindControls() {
+          // 手機 touch
+          btnLeft.addEventListener("touchstart", function (e) {
+            e.preventDefault();
+            gameState.movingLeft = true;
+          });
+          btnLeft.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            gameState.movingLeft = false;
+          });
+
+          btnRight.addEventListener("touchstart", function (e) {
+            e.preventDefault();
+            gameState.movingRight = true;
+          });
+          btnRight.addEventListener("touchend", function (e) {
+            e.preventDefault();
+            gameState.movingRight = false;
+          });
+
+          // 滑鼠
+          btnLeft.addEventListener("mousedown", function () {
+            gameState.movingLeft = true;
+          });
+          btnLeft.addEventListener("mouseup", function () {
+            gameState.movingLeft = false;
+          });
+          btnLeft.addEventListener("mouseleave", function () {
+            gameState.movingLeft = false;
+          });
+
+          btnRight.addEventListener("mousedown", function () {
+            gameState.movingRight = true;
+          });
+          btnRight.addEventListener("mouseup", function () {
+            gameState.movingRight = false;
+          });
+          btnRight.addEventListener("mouseleave", function () {
+            gameState.movingRight = false;
+          });
+
+          // 鍵盤
+          window.addEventListener("keydown", function (e) {
+            if (e.key === "ArrowLeft") gameState.movingLeft = true;
+            if (e.key === "ArrowRight") gameState.movingRight = true;
+          });
+
+          window.addEventListener("keyup", function (e) {
+            if (e.key === "ArrowLeft") gameState.movingLeft = false;
+            if (e.key === "ArrowRight") gameState.movingRight = false;
+          });
+        }
+
+        // -------- 結束畫面按鈕 --------
+        btnRestart.addEventListener("click", function () {
+          setScreen(gameScreen);
+          resizeCanvas();
+          resetGameState();
+          draw();
+          startGameLoop();
+        });
+
+        btnBackTitle.addEventListener("click", function () {
+          startChoices.classList.remove("hidden");
+          startMainBtnWrapper.classList.add("hidden");
+          typeText(startDialogText, "你是不是想問這是什麼？", 60);
+          setScreen(startScreen);
+        });
+
+        // -------- 開始遊戲按鈕 --------
+        btnStartGame.addEventListener("click", function () {
+          setScreen(gameScreen);
+          resizeCanvas();
+          resetGameState();
+          draw();
+          startGameLoop();
+        });
+
+        // -------- 初始化 --------
+        bindControls();
+        setScreen(startScreen);
+        typeText(startDialogText, "你是不是想問這是什麼？", 60);
+
+        window.addEventListener("load", function () {
+          resizeCanvas();
+          resetGameState();
+          draw();
+        });
+      })();
+    </script>
+  </body>
+</html>
